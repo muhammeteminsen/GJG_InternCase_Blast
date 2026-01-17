@@ -6,10 +6,10 @@ using Random = UnityEngine.Random;
 
 public class GridSystem : MonoBehaviour
 {
-    [Header("Grid Settings")] [SerializeField, Range(1f, 20f)]
+    [Header("Grid Settings")] [SerializeField, Range(2f, 10f)]
     private int rows = 10;
 
-    [SerializeField, Range(1f, 20f)] private int cols = 10;
+    [SerializeField, Range(2f, 10f)] private int cols = 10;
     [SerializeField, Min(0f)] private float rowSpacing = 1f;
     [SerializeField, Min(0f)] private float colSpacing = 1f;
 
@@ -24,6 +24,7 @@ public class GridSystem : MonoBehaviour
     private Camera MainCamera => Camera.main;
     private GridCell[,] _gridCells;
     private bool _isClicked;
+    
     private void Start()
     {
         CreateGrid();
@@ -32,7 +33,6 @@ public class GridSystem : MonoBehaviour
 
     private void OnCellClicked(GridCell clickedCell)
     {
-       
         if (_isClicked) return;
         List<GridCell> matchedCells = new List<GridCell>();
         HashSet<GridCell> visitedCells = new HashSet<GridCell>();
@@ -134,7 +134,6 @@ public class GridSystem : MonoBehaviour
     private void FindNeighbors(int x, int y, HashSet<GridCell> visited,List<GridCell> matches, GridCellType targetType)
     {
         if (x < 0 || x >= cols || y < 0 || y >= rows) return;
-
         GridCell cell = _gridCells[x, y];
         if (visited.Contains(cell)) return;
         if (cell.CellType != targetType) return;
