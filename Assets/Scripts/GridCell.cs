@@ -13,7 +13,7 @@ public class GridCell : MonoBehaviour
 {
     public GridCellType CellType { get; private set; }
     public Vector2Int GridPosition { get; private set; }
-    private SpriteRenderer SpriteRenderer => GetComponent<SpriteRenderer>();
+    public SpriteRenderer SpriteRenderer => GetComponent<SpriteRenderer>();
     private Action<GridCell> _onClicked;
     private void OnMouseDown()
     {
@@ -27,11 +27,10 @@ public class GridCell : MonoBehaviour
         GridPosition = position;
         _onClicked = onClicked;
     }
-    public void UpdateGridPosition(int x, int y, CellData_SO.CellVisual cellVisual)
+    public void UpdateGridPosition(int x, int y)
     {
         GridPosition = new Vector2Int(x, y);
         name = "GridCell_x_" + x + "_y_" + y;
-        UpdateVisual(x + y, cellVisual);
     }
     
     public void UpdateVisual(int value, CellData_SO.CellVisual cellVisual)

@@ -6,27 +6,38 @@ using Random = UnityEngine.Random;
 
 public class GridSystem : MonoBehaviour
 {
-    [Header("Grid Settings")] [SerializeField, Range(2f, 10f)]
-    private int rows = 10;
-
+    [Header("Grid Settings")] 
+    [SerializeField, Range(2f, 10f)] private int rows = 10;
     [SerializeField, Range(2f, 10f)] private int cols = 10;
     [SerializeField, Min(0f)] private float rowSpacing = 1f;
     [SerializeField, Min(0f)] private float colSpacing = 1f;
-
-    [Header("References")] [SerializeField]
-    private Transform originPosition;
-
+    
+    [Space,Header("References")] 
+    [SerializeField] private Transform originPosition;
     [SerializeField] private GridCell gridCellPrefab;
     [SerializeField] private CellData_SO cellDataSo;
+    
+    [Space,Header("Visuals")] 
+    [Space, Header("--Falling--")]
+    [SerializeField,Range(0.2f, 3f)] private float fallingDuration = 0.5f;
+    [SerializeField] private Ease fallingEase = Ease.OutBounce;
+    
+    [Space, Header("--Merge--")]
+    [SerializeField,Range(0.2f, 3f)] private float mergeDuration = 0.3f;
+    
+    [Space,Header("--No Merge")]
+    [SerializeField,Range(0.2f, 3f)] private float noMergeDuration = 0.2f;
+    
+    [Space,Header("Debug Settings")] 
+    [SerializeField] private bool showDebugLabels = true;
 
-    [Header("Debug Settings")] [SerializeField]
-    private bool showDebugLabels = true;
     private Camera MainCamera => Camera.main;
     private GridCell[,] _gridCells;
     private bool _isClicked;
-    
+
     private void Start()
     {
+        DOTween.Init();
         CreateGrid();
     }
 
@@ -36,18 +47,33 @@ public class GridSystem : MonoBehaviour
         if (_isClicked) return;
         List<GridCell> matchedCells = new List<GridCell>();
         HashSet<GridCell> visitedCells = new HashSet<GridCell>();
-        FindNeighbors(clickedCell.GridPosition.x, clickedCell.GridPosition.y,visitedCells,matchedCells, clickedCell.CellType);
+        FindNeighbors(clickedCell.GridPosition.x, clickedCell.GridPosition.y, visitedCells, matchedCells,
+            clickedCell.CellType);
         if (matchedCells.Count > 1)
         {
             _isClicked = true;
-            foreach (var cell in matchedCells)
+            Sequence clickedSequence = DOTween.Sequence();
+            if (matchedCells.Count >= 5)
             {
-                _gridCells[cell.GridPosition.x, cell.GridPosition.y] = null;
-                Destroy(cell.gameObject);
+                for (var i = 0; i < matchedCells.Count; i++)
+                {
+                    GridCell matched = matchedCells[i];
+                    if (clickedCell == matched) continue;
+                    matched.SpriteRenderer.sortingOrder = rows + i;
+                    float delay = i * 0.1f;
+                    clickedSequence.Insert(delay,matched.transform.DOMove(clickedCell.transform.position, mergeDuration));
+                }
+                clickedSequence.OnComplete(() => { ApplyGravity(matchedCells); });
             }
-            ApplyGravity();
-            UpdateAllVisuals();
+            else
+                ApplyGravity(matchedCells);
+
+            return;
         }
+        int indexY = clickedCell.GridPosition.y;
+        clickedCell.SpriteRenderer.sortingOrder = rows + 1;
+        clickedCell.transform.DOShakeRotation(noMergeDuration, new Vector3(0, 0, 10), 20, 10, false)
+            .OnComplete(() => { clickedCell.SpriteRenderer.sortingOrder = indexY;});
     }
 
     private void UpdateAllVisuals()
@@ -65,6 +91,7 @@ public class GridSystem : MonoBehaviour
             }
         }
     }
+
     [Button]
     private void CreateGrid()
     {
@@ -80,9 +107,11 @@ public class GridSystem : MonoBehaviour
                 newGridCell.transform.position =
                     new Vector3(x * colSpacing, y * rowSpacing, 0) + originPosition.position;
                 newGridCell.name = "GridCell_x_" + x + "_y_" + y;
+                newGridCell.SpriteRenderer.sortingOrder = y;
                 _gridCells[x, y] = newGridCell;
             }
         }
+
         UpdateAllVisuals();
         CenterCameraView();
     }
@@ -97,7 +126,6 @@ public class GridSystem : MonoBehaviour
                 Destroy(originPosition.GetChild(i).gameObject);
             else
                 DestroyImmediate(originPosition.GetChild(i).gameObject);
-            
         }
     }
 
@@ -131,7 +159,7 @@ public class GridSystem : MonoBehaviour
         new Vector2Int(0, 1)
     };
 
-    private void FindNeighbors(int x, int y, HashSet<GridCell> visited,List<GridCell> matches, GridCellType targetType)
+    private void FindNeighbors(int x, int y, HashSet<GridCell> visited, List<GridCell> matches, GridCellType targetType)
     {
         if (x < 0 || x >= cols || y < 0 || y >= rows) return;
         GridCell cell = _gridCells[x, y];
@@ -140,11 +168,17 @@ public class GridSystem : MonoBehaviour
         visited.Add(cell);
         matches.Add(cell);
         foreach (var offset in _neighborOffsets)
-            FindNeighbors(x + offset.x, y + offset.y, visited,matches, targetType);
+            FindNeighbors(x + offset.x, y + offset.y, visited, matches, targetType);
     }
 
-    private void ApplyGravity()
+    private void ApplyGravity(List<GridCell> matchedCells)
     {
+        foreach (var cell in matchedCells)
+        {
+            _gridCells[cell.GridPosition.x, cell.GridPosition.y] = null;
+            Destroy(cell.gameObject);
+        }
+
         Sequence mainSequence = DOTween.Sequence();
         for (int x = 0; x < cols; x++)
         {
@@ -160,9 +194,10 @@ public class GridSystem : MonoBehaviour
             foreach (var cell in validCells)
             {
                 Vector3 targetPos = originPosition.position + new Vector3(x * colSpacing, currentY * rowSpacing, 0);
-                mainSequence.Join(cell.transform.DOMove(targetPos, 1f).SetEase(Ease.OutBounce));
+                mainSequence.Join(cell.transform.DOMove(targetPos, fallingDuration).SetEase(fallingEase));
                 _gridCells[x, currentY] = cell;
-                cell.UpdateGridPosition(x, currentY, cellDataSo.GetType(cell.CellType));
+                cell.UpdateGridPosition(x, currentY);
+                cell.SpriteRenderer.sortingOrder = currentY;
                 currentY++;
             }
 
@@ -171,6 +206,12 @@ public class GridSystem : MonoBehaviour
                 SpawnNewCells(x, y, mainSequence);
             }
         }
+
+        mainSequence.OnComplete(() =>
+        {
+            UpdateAllVisuals();
+            _isClicked = false;
+        });
     }
 
     private void SpawnNewCells(int x, int y, Sequence sequence)
@@ -180,16 +221,13 @@ public class GridSystem : MonoBehaviour
         GridCell newGridCell = Instantiate(gridCellPrefab, spawnPos, Quaternion.identity, originPosition);
         GridCellType type = (GridCellType)Random.Range(0, Enum.GetValues(typeof(GridCellType)).Length);
         newGridCell.Initialize(type, cellDataSo.GetType(type), new Vector2Int(x, y), OnCellClicked);
-        sequence.Join(newGridCell.transform.DOMove(targetPos, 1f).SetEase(Ease.OutBounce));
-        sequence.OnComplete(() =>
-        {
-         _isClicked = false;
-        });
+        sequence.Join(newGridCell.transform.DOMove(targetPos, fallingDuration).SetEase(fallingEase));
+        sequence.OnComplete(() => { _isClicked = false; });
         newGridCell.name = "GridCell_x_" + x + "_y_" + y;
+        newGridCell.SpriteRenderer.sortingOrder = y;
         _gridCells[x, y] = newGridCell;
-        
     }
-    
+
     private void OnGUI()
     {
         if (!showDebugLabels || !MainCamera || !IsCenterable()) return;
