@@ -30,7 +30,6 @@ public class GridCell : MonoBehaviour
     public void UpdateGridPosition(int x, int y)
     {
         GridPosition = new Vector2Int(x, y);
-        name = "GridCell_x_" + x + "_y_" + y;
     }
     
     public void UpdateVisual(int value, CellData_SO.CellVisual cellVisual)
