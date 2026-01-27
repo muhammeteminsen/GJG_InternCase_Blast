@@ -109,7 +109,9 @@ namespace Grid
 
         private void SetupLevel()
         {
+#if UNITY_EDITOR
             CenterCameraView();
+#endif
             _matchFinder = new GridMatchFinder(GridCells, cols, rows, cellDataSo, OnClickedCell);
             _gridAnimator = new GridAnimator(GridCells, cols, rows, spacing, cellDataSo, OnClickedCell,
                 LevelManager.ObjectPool);
@@ -117,6 +119,7 @@ namespace Grid
             if (!_matchFinder.HasAnyMatch())
                 _matchFinder.HandleShuffle(SetClickable);
         }
+#if UNITY_EDITOR
         [Button]
         public void ClearGrid()
         {
@@ -128,18 +131,20 @@ namespace Grid
         {
             LevelManager.SaveLevel();
         }
-
-        private void SetClickable(bool state)
-        {
-            _isClickable = state;
-        }
-
+        
         [Button]
         private void CenterCameraView()
         {
             Vector2 pos = GetCenterCell();
             Camera.transform.position = new Vector3(pos.x,pos.y, -10);
         }
+#endif
+        private void SetClickable(bool state)
+        {
+            _isClickable = state;
+        }
+
+       
     
         private Vector2 GetCenterCell()
         {
