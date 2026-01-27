@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Grid;
 using UnityEngine;
 
 
-[CreateAssetMenu(fileName = "CellData", menuName = "ScriptableObjects/CellData")]
-public class CellData_SO : ScriptableObject
+[CreateAssetMenu(fileName = "CellData", menuName = "ScriptableObjects/Create New CellData")]
+public class CellDataSo : ScriptableObject
 {
     [Serializable]
     public struct CellVisual
