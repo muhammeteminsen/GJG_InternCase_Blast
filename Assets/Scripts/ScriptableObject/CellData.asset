@@ -43,3 +43,7 @@ MonoBehaviour:
     iconA: {fileID: 414921610477409366, guid: ffbc8e053feddec4da88fbad9fe66b8c, type: 3}
     iconB: {fileID: -6038182108957047188, guid: d0612c45c4070274bb37001dd9d10601, type: 3}
     iconC: {fileID: -7586140276444505714, guid: 2a3e42bceb2ec704c8f1ecba034134a5, type: 3}
+  minMatchableCells: 2
+  iconAMatchCount: 4
+  iconBMatchCount: 7
+  iconCMatchCount: 10

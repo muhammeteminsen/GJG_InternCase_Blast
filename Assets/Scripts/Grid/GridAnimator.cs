@@ -16,7 +16,6 @@ namespace Grid
         private readonly Action<GridCell> _onClickedCell;
         private readonly ObjectPool<GridCell> _objectPool;
         private readonly CellDataSo _cellDataSo;
-
         public GridAnimator(GridCell[,] gridCells,int cols, int rows, float spacing,CellDataSo cellDataSo,Action<GridCell> onClickedCell, ObjectPool<GridCell> objectPool)
         {
             _gridCells = gridCells;
@@ -28,7 +27,7 @@ namespace Grid
             _cellDataSo = cellDataSo;
         }
 
-        public void ApplyGravity(Action gravityComplete)
+        public void GravityAnimation(Action gravityComplete, Action cellFallComplete)
         {
             _gravitySeq = DOTween.Sequence();
             for (int x = 0; x < _cols; x++)
@@ -58,13 +57,13 @@ namespace Grid
                     SpawnNewCells(x, y);
                 }
             }
-
+            _gravitySeq.InsertCallback( _gravitySeq.Duration()*0.1f,cellFallComplete.Invoke);
             _gravitySeq.OnComplete(gravityComplete.Invoke);
         }
 
         private void SpawnNewCells(int x, int y)
         {
-            GridCellType cellType = (GridCellType)Random.Range(0, Enum.GetValues(typeof(GridCellType)).Length);
+            GridCellType cellType = (GridCellType)Random.Range(0, _cellDataSo.cellDataList.Count);
             Vector2 spawnPosition = Vector2.zero + new Vector2(x * _spacing, y * _spacing + 5f);
             Vector2 targetPosition = Vector2.zero + new Vector2(x * _spacing, y * _spacing);
             GridCell newCell = _objectPool.Get();

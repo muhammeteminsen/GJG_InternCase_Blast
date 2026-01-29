@@ -29,6 +29,7 @@ namespace Grid
             _cellDataSo = cellDataSo;
             _onClickCallback = onClickCallback;
             _gridCellPrefab = gridCellPrefab;
+            PoolInitialize();
         }
 
         #region LevelSytem
@@ -80,7 +81,6 @@ namespace Grid
         #endregion
 
         #region GridSystem
-
         public GridCell[,] CreateGrid()
         {
             ClearGrid();
@@ -91,7 +91,7 @@ namespace Grid
                 for (int y = 0; y < _rows; y++)
                 {
                     GridCell cell = ObjectPool?.Get();
-                    GridCellType type = (GridCellType)Random.Range(0, Enum.GetValues(typeof(GridCellType)).Length);
+                    GridCellType type = (GridCellType)Random.Range(0, _cellDataSo.cellDataList.Count);
                     CellInitialize(x, y, cell, type);
                 }
             }

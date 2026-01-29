@@ -12,14 +12,15 @@ public class CellDataSo : ScriptableObject
     {
         public GridCellType type;
         public Sprite defaultIcon;
-        [Tooltip("Between 5 and 7")]
         public Sprite iconA;
-        [Tooltip("Between 8 and 10")]
         public Sprite iconB;
-        [Tooltip("10+")]
         public Sprite iconC;
     }
     public List<CellVisual> cellDataList;
+    [Min(0)]public int minMatchableCells = 2;
+    [Min(0)]public int iconAMatchCount = 4;
+    [Min(0)]public int iconBMatchCount = 7;
+    [Min(0)]public int iconCMatchCount = 10;
     
     public CellVisual GetType(GridCellType type)
     {
@@ -29,5 +30,10 @@ public class CellDataSo : ScriptableObject
                 return cellData;
         }
         return default;
+    }
+
+    private void OnValidate()
+    {
+        minMatchableCells = Mathf.Min(minMatchableCells, iconAMatchCount);
     }
 }

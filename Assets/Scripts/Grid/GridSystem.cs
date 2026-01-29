@@ -6,13 +6,15 @@ namespace Grid
 {
     public class GridSystem : MonoBehaviour
     {
-        [Header("Grid Value")] 
-        [SerializeField,Range(2, 10)] public int cols = 10;
-        [SerializeField,Range(2, 10)] public int rows = 10;
-        [SerializeField,Range(0.2f, 5f)] public float spacing = 1.1f;
+        [Header("Grid Value")] [SerializeField, Range(2, 10)]
+        public int cols = 10;
 
-        [Header("References")] 
-        [SerializeField] private GridCell gridCellPrefab;
+        [SerializeField, Range(2, 10)] public int rows = 10;
+        [SerializeField, Range(0.2f, 5f)] public float spacing = 1.1f;
+
+        [Header("References")] [SerializeField]
+        private GridCell gridCellPrefab;
+
         [SerializeField] private CellDataSo cellDataSo;
         [SerializeField] private LevelDataSo levelDataSo;
         [SerializeField] private bool useRandomizeCell;
@@ -21,32 +23,20 @@ namespace Grid
         private bool _isClickable = true;
         private Transform _gridParent;
         private Camera Camera => Camera.main;
-   
+
         private GridLevelManager _levelManager;
-        private GridLevelManager LevelManager
-        {
-            get
-            {
-                if (_levelManager == null)
-                {
-                    InitializeReferences();
-                }
-                return _levelManager;
-            }
-        }
+
+        private GridLevelManager LevelManager => _levelManager ??= new GridLevelManager(GridCells, cols, rows, spacing,
+            cellDataSo, levelDataSo, gridCellPrefab,
+            OnClickedCell);
+
         private GridMatchFinder _matchFinder;
         private GridAnimator _gridAnimator;
+        private FeedbacksManager FeedbacksManager => GetComponent<FeedbacksManager>();
 
         private void Awake()
         {
             GridCells = new GridCell[cols, rows];
-        }
-        private void InitializeReferences()
-        {
-            if (_levelManager != null) return;
-            _levelManager = new GridLevelManager(GridCells, cols, rows, spacing, cellDataSo, levelDataSo, gridCellPrefab,
-                OnClickedCell);
-       
         }
 
         private void Start()
@@ -55,44 +45,77 @@ namespace Grid
                 LoadLevel();
             else
                 CreateGrid();
-        
         }
-
         private void OnClickedCell(GridCell cell)
         {
             if (!_isClickable) return;
             List<GridCell> matches = _matchFinder.FindNeighbors(cell.GridPosition.x, cell.GridPosition.y);
-            if (matches.Count > 1)
+            if (matches.Count >= cellDataSo.minMatchableCells)
             {
                 SetClickable(false);
-                foreach (var match in matches)
+                if (matches.Count >= cellDataSo.iconAMatchCount)
                 {
-                    Vector2Int position = match.GridPosition;
-                    GridCells[position.x, position.y] = null;
-                    _levelManager.ObjectPool.Release(match);
-                }
-
-                _gridAnimator.ApplyGravity(gravityComplete:() =>
-                {
-                    _matchFinder.AllFindNeighbors();
-                    if (!_matchFinder.HasAnyMatch())
+                    Sequence clickedSeq = DOTween.Sequence();
+                    for (var i = 0; i < matches.Count; i++)
                     {
-                        _matchFinder.HandleShuffle(SetClickable);
-                        return;
+                        GridCell match = matches[i];
+                        if (cell == match) continue;
+                        match.SpriteRenderer.sortingOrder = cell.SpriteRenderer.sortingOrder + i;
+                        clickedSeq.Insert(i * 0.1f,
+                            match.transform.DOMove(cell.transform.position, 0.5f).SetEase(Ease.InOutBack));
                     }
 
-                    SetClickable(true);
-                });
+                    clickedSeq.OnComplete(() =>
+                    {
+                        ApplyGravity(matches);
+                        FeedbacksManager.PlayFeedbacks(FeedbackType.BigMatch);
+                    });
+                }
+                else
+                {
+                    ApplyGravity(matches);
+                    FeedbacksManager.PlayFeedbacks(FeedbackType.Matchable);
+                }
+
                 return;
             }
 
+            SetClickable(false);
+            FeedbacksManager.PlayFeedbacks(FeedbackType.NotMatchable);
             cell.transform.DOKill(true);
-            cell.transform.DOShakeRotation(0.2f, new Vector3(0, 0, 10), 10, .1f, false);
+            cell.transform.DOShakeRotation(1f, new Vector3(0, 0, 10), 10, 1, false, ShakeRandomnessMode.Harmonic)
+                .OnComplete(() => SetClickable(true));
+        }
+
+        private void ApplyGravity(List<GridCell> matches)
+        {
+            FeedbacksManager.PlayFeedbacks(FeedbackType.GravityActive);
+            foreach (var match in matches)
+            {
+                Vector2Int position = match.GridPosition;
+                GridCells[position.x, position.y] = null;
+                LevelManager.ObjectPool.Release(match);
+            }
+            _gridAnimator.GravityAnimation(gravityComplete: () =>
+            {
+                _matchFinder.AllFindNeighbors();
+                if (!_matchFinder.HasAnyMatch())
+                {
+                    _matchFinder.HandleShuffle(SetClickable);
+                    FeedbacksManager.PlayFeedbacks(FeedbackType.Shuffle);
+                    return;
+                }
+                SetClickable(true);
+            }, cellFallComplete: () =>
+            {
+                FeedbacksManager.PlayFeedbacks(FeedbackType.GravityComplete);    
+            });
         }
 
         [Button]
         private void CreateGrid()
         {
+            _levelManager = null;
             DOTween.KillAll();
             GridCells = LevelManager.CreateGrid();
             SetupLevel();
@@ -100,6 +123,7 @@ namespace Grid
 
         private void LoadLevel()
         {
+            _levelManager = null;
             cols = levelDataSo.cols;
             rows = levelDataSo.rows;
             DOTween.KillAll();
@@ -131,12 +155,12 @@ namespace Grid
         {
             LevelManager.SaveLevel();
         }
-        
+
         [Button]
         private void CenterCameraView()
         {
             Vector2 pos = GetCenterCell();
-            Camera.transform.position = new Vector3(pos.x,pos.y, -10);
+            Camera.transform.position = new Vector3(pos.x, pos.y, -10);
         }
 #endif
         private void SetClickable(bool state)
@@ -144,8 +168,7 @@ namespace Grid
             _isClickable = state;
         }
 
-       
-    
+
         private Vector2 GetCenterCell()
         {
             float height = (rows - 1) * spacing;

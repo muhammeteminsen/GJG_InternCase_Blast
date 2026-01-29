@@ -35,17 +35,17 @@ namespace Grid
             GridPosition = new Vector2Int(x, y);
         }
     
-        public int UpdateVisual(int value, CellDataSo.CellVisual cellVisual)
+        public void UpdateVisual(int value, CellDataSo cellDataSo)
         {
-            if (value >= 10)
+            CellDataSo.CellVisual cellVisual = cellDataSo.GetType(CellType);
+            if (value >= cellDataSo.iconCMatchCount)
                 SpriteRenderer.sprite = cellVisual.iconC;
-            else if (value >= 8)
+            else if (value >= cellDataSo.iconBMatchCount)
                 SpriteRenderer.sprite = cellVisual.iconB;
-            else if (value >= 5)
+            else if (value >= cellDataSo.iconAMatchCount)
                 SpriteRenderer.sprite = cellVisual.iconA;
             else
                 SpriteRenderer.sprite = cellVisual.defaultIcon;
-            return value;
         }
     }
 }

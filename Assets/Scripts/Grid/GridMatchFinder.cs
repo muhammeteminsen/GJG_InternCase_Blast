@@ -72,7 +72,7 @@ namespace Grid
             }
 
             foreach (GridCell cell in matches)
-                cell.UpdateVisual(matches.Count, _cellDataSo.GetType(cell.CellType));
+                cell.UpdateVisual(matches.Count,_cellDataSo);
             return matches;
         }
         #region Shuffle
@@ -120,7 +120,7 @@ namespace Grid
                     int currentY = y;
                     int currentX = x;
                     GridCell gridCell = _gridCells[x, y];
-                    seq.Join(gridCell.transform.DOPunchScale(Vector3.one * 0.3f, 0.1f));
+                    seq.Join(gridCell.transform.DOPunchScale(Vector3.one * 0.3f, 0.12f));
                     seq.AppendCallback(() =>
                     {
                         gridCell.Initialize(currentTypes[index], _cellDataSo.GetType(currentTypes[index]),
@@ -147,13 +147,10 @@ namespace Grid
             int randomX = Random.Range(0, _cols - 1);
             int randomY = Random.Range(0, _rows);
             Sequence seq = DOTween.Sequence();
-            seq.Join(_gridCells[randomX + 1, randomY].transform.DOPunchScale(Vector3.one * 0.2f, .2f));
-            seq.AppendCallback(() =>
-            {
-                GridCellType gridCellType = _gridCells[randomX, randomY].CellType;
-                _gridCells[randomX + 1, randomY].Initialize(gridCellType, _cellDataSo.GetType(gridCellType),
-                    new Vector2Int(randomX + 1, randomY), _onCellClickCallback);
-            });
+            GridCellType gridCellType = _gridCells[randomX, randomY].CellType;
+            _gridCells[randomX + 1, randomY].Initialize(gridCellType, _cellDataSo.GetType(gridCellType),
+                new Vector2Int(randomX + 1, randomY), _onCellClickCallback);
+            seq.Join(_gridCells[randomX + 1, randomY].transform.DOPunchScale(Vector3.one * 0.2f, .12f));
             seq.OnComplete(() => setClickableCallback.Invoke(true));
         }
 
