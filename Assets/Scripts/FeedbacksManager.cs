@@ -6,7 +6,7 @@ using UnityEngine;
 public enum FeedbackType
 {
     Shuffle,
-    NotMatchable,
+    NonMatchable,
     GravityActive,
     GravityComplete,
     Matchable,

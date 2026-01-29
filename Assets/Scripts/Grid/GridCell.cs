@@ -18,6 +18,7 @@ namespace Grid
         public Vector2Int GridPosition { get; private set; }
         public SpriteRenderer SpriteRenderer => GetComponent<SpriteRenderer>();
         private Action<GridCell> _onClicked;
+        private int _matchValue;
         private void OnMouseDown()
         {
             _onClicked?.Invoke(this);
@@ -46,6 +47,19 @@ namespace Grid
                 SpriteRenderer.sprite = cellVisual.iconA;
             else
                 SpriteRenderer.sprite = cellVisual.defaultIcon;
+            _matchValue = value;
+        }
+
+        public void UpdateScore(CellDataSo cellDataSo,GameManager gameManager)
+        {
+            if (_matchValue>= cellDataSo.iconCMatchCount)
+                gameManager.ApplyUpdateScore(cellDataSo.iconCScoreMultiplier * _matchValue);
+            else if (_matchValue >= cellDataSo.iconBMatchCount)
+                gameManager.ApplyUpdateScore(cellDataSo.iconBScoreMultiplier * _matchValue);
+            else if (_matchValue >= cellDataSo.iconAMatchCount)
+                gameManager.ApplyUpdateScore(cellDataSo.iconAScoreMultiplier* _matchValue);
+            else
+                gameManager.ApplyUpdateScore(cellDataSo.baseScore);
         }
     }
 }

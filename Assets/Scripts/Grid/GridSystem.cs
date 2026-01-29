@@ -15,16 +15,17 @@ namespace Grid
         [Header("References")] [SerializeField]
         private GridCell gridCellPrefab;
 
-        [SerializeField] private CellDataSo cellDataSo;
-        [SerializeField] private LevelDataSo levelDataSo;
         [SerializeField] private bool useRandomizeCell;
 
         private GridCell[,] GridCells { get; set; }
         private bool _isClickable = true;
         private Transform _gridParent;
         private Camera Camera => Camera.main;
-
         private GridLevelManager _levelManager;
+
+        private GameManager _gameManager;
+        public CellDataSo cellDataSo;
+        public LevelDataSo levelDataSo;
 
         private GridLevelManager LevelManager => _levelManager ??= new GridLevelManager(GridCells, cols, rows, spacing,
             cellDataSo, levelDataSo, gridCellPrefab,
@@ -32,11 +33,11 @@ namespace Grid
 
         private GridMatchFinder _matchFinder;
         private GridAnimator _gridAnimator;
-        private FeedbacksManager FeedbacksManager => GetComponent<FeedbacksManager>();
 
         private void Awake()
         {
             GridCells = new GridCell[cols, rows];
+            _gameManager = GetComponent<GameManager>();
         }
 
         private void Start()
@@ -45,7 +46,9 @@ namespace Grid
                 LoadLevel();
             else
                 CreateGrid();
+            _gameManager.InitializeGame(levelDataSo.initialMoves, 0, levelDataSo);
         }
+
         private void OnClickedCell(GridCell cell)
         {
             if (!_isClickable) return;
@@ -53,6 +56,8 @@ namespace Grid
             if (matches.Count >= cellDataSo.minMatchableCells)
             {
                 SetClickable(false);
+                _gameManager.ApplyMoves();
+
                 if (matches.Count >= cellDataSo.iconAMatchCount)
                 {
                     Sequence clickedSeq = DOTween.Sequence();
@@ -67,21 +72,27 @@ namespace Grid
 
                     clickedSeq.OnComplete(() =>
                     {
-                        ApplyGravity(matches);
-                        FeedbacksManager.PlayFeedbacks(FeedbackType.BigMatch);
+                        _gameManager.ApplyFeedback(FeedbackType.BigMatch);
+                        ExecuteMatchLogic();
                     });
                 }
                 else
                 {
-                    ApplyGravity(matches);
-                    FeedbacksManager.PlayFeedbacks(FeedbackType.Matchable);
+                    _gameManager.ApplyFeedback(FeedbackType.Matchable);
+                    ExecuteMatchLogic();
                 }
 
                 return;
+
+                void ExecuteMatchLogic()
+                {
+                    ApplyGravity(matches);
+                    cell.UpdateScore(cellDataSo, _gameManager);
+                }
             }
 
             SetClickable(false);
-            FeedbacksManager.PlayFeedbacks(FeedbackType.NotMatchable);
+            _gameManager.ApplyFeedback(FeedbackType.NonMatchable);
             cell.transform.DOKill(true);
             cell.transform.DOShakeRotation(1f, new Vector3(0, 0, 10), 10, 1, false, ShakeRandomnessMode.Harmonic)
                 .OnComplete(() => SetClickable(true));
@@ -89,27 +100,34 @@ namespace Grid
 
         private void ApplyGravity(List<GridCell> matches)
         {
-            FeedbacksManager.PlayFeedbacks(FeedbackType.GravityActive);
+            _gameManager.ApplyFeedback(FeedbackType.GravityActive);
             foreach (var match in matches)
             {
                 Vector2Int position = match.GridPosition;
                 GridCells[position.x, position.y] = null;
                 LevelManager.ObjectPool.Release(match);
             }
+
             _gridAnimator.GravityAnimation(gravityComplete: () =>
             {
                 _matchFinder.AllFindNeighbors();
-                if (!_matchFinder.HasAnyMatch())
+                _gameManager.ApplyFinishGame(isGameFinished=>
                 {
-                    _matchFinder.HandleShuffle(SetClickable);
-                    FeedbacksManager.PlayFeedbacks(FeedbackType.Shuffle);
-                    return;
-                }
-                SetClickable(true);
-            }, cellFallComplete: () =>
-            {
-                FeedbacksManager.PlayFeedbacks(FeedbackType.GravityComplete);    
-            });
+                    if (isGameFinished)
+                    {
+                        SetClickable(false);
+                        return;
+                    }
+                    if (!_matchFinder.HasAnyMatch())
+                    {
+                        _matchFinder.HandleShuffle(SetClickable);
+                        _gameManager.ApplyFeedback(FeedbackType.Shuffle);
+                        return;
+                    }
+                    SetClickable(true);
+                });
+                
+            }, cellFallComplete: () => { _gameManager.ApplyFeedback(FeedbackType.GravityComplete); });
         }
 
         [Button]
@@ -133,9 +151,7 @@ namespace Grid
 
         private void SetupLevel()
         {
-#if UNITY_EDITOR
             CenterCameraView();
-#endif
             _matchFinder = new GridMatchFinder(GridCells, cols, rows, cellDataSo, OnClickedCell);
             _gridAnimator = new GridAnimator(GridCells, cols, rows, spacing, cellDataSo, OnClickedCell,
                 LevelManager.ObjectPool);
@@ -155,14 +171,14 @@ namespace Grid
         {
             LevelManager.SaveLevel();
         }
-
+#endif
         [Button]
         private void CenterCameraView()
         {
             Vector2 pos = GetCenterCell();
             Camera.transform.position = new Vector3(pos.x, pos.y, -10);
         }
-#endif
+
         private void SetClickable(bool state)
         {
             _isClickable = state;

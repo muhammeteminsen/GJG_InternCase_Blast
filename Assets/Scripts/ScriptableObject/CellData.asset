@@ -47,3 +47,7 @@ MonoBehaviour:
   iconAMatchCount: 4
   iconBMatchCount: 7
   iconCMatchCount: 10
+  baseScore: 20
+  iconAScoreMultiplier: 10
+  iconBScoreMultiplier: 20
+  iconCScoreMultiplier: 30

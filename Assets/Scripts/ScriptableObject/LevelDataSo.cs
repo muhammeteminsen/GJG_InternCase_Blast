@@ -12,6 +12,7 @@ public struct CellData
 [CreateAssetMenu(fileName = "LevelData", menuName = "ScriptableObjects/Create New Level Data")]
 public class LevelDataSo : ScriptableObject
 {
+    public int initialMoves;
     public int cols;
     public int rows;
     public List<CellData> cellData = new List<CellData>();

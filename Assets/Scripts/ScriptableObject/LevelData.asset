@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65013a5e582c7eb44aa21909c7b103c2, type: 3}
   m_Name: LevelData
   m_EditorClassIdentifier: Assembly-CSharp::LevelData_SO
+  initialMoves: 50
   cols: 4
   rows: 4
   cellData:
