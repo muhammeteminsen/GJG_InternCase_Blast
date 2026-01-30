@@ -32,12 +32,13 @@ public class UIManager : MonoBehaviour
     }
     public void UpdateInitial(int moves, int score )
     {
+        Sequence initialSeq = DOTween.Sequence();
         movesValueText.text = moves.ToString();
         scoreValueText.text = score.ToString();
         scorePanel.transform.localScale = Vector3.zero;
         movesPanel.transform.localScale = Vector3.zero;
-        scorePanel.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack);
-        movesPanel.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack);
+        initialSeq.Join(scorePanel.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack));
+        initialSeq.Join(movesPanel.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack));
         finishGamePanel.SetActive(false);
     }
     public void RestartGame(Action restartCallback)
@@ -47,11 +48,12 @@ public class UIManager : MonoBehaviour
     }
     public void FinishGame(Action<bool> clickableCallback)
     {
+        Sequence finishGameSeq = DOTween.Sequence();
         finishGamePanel.transform.localScale = Vector3.zero;
         finishGamePanel.SetActive(true);
-        finishGamePanel.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack);
-        scorePanel.transform.DOScale(Vector3.zero, 0.5f).SetEase(Ease.OutBack);
-        movesPanel.transform.DOScale(Vector3.zero, 0.5f).SetEase(Ease.OutBack);
+        finishGameSeq.Join(finishGamePanel.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack));
+        finishGameSeq.Join(scorePanel.transform.DOScale(Vector3.zero, 0.5f).SetEase(Ease.OutBack));
+        finishGameSeq.Join(movesPanel.transform.DOScale(Vector3.zero, 0.5f).SetEase(Ease.OutBack));
         clickableCallback?.Invoke(false);
     }
 }

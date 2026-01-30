@@ -10,7 +10,8 @@ public enum FeedbackType
     GravityActive,
     GravityComplete,
     Matchable,
-    BigMatch
+    BigMatch,
+    FinishGame
 }
 public class FeedbacksManager : MonoBehaviour
 {

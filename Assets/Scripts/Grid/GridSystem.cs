@@ -115,6 +115,7 @@ namespace Grid
                 {
                     if (isGameFinished)
                     {
+                        _gameManager.ApplyFeedback(FeedbackType.FinishGame);
                         SetClickable(false);
                         return;
                     }
