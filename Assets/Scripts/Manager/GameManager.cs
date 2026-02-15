@@ -15,6 +15,7 @@ public class GameManager : MonoBehaviour
     }
     public void ApplyFeedback(FeedbackType feedbackType)
     {
+
         _feedbacksManager.PlayFeedbacks(feedbackType);
     }
     public void InitializeGame(int moves, int score, LevelDataSo levelDataSo)
@@ -25,7 +26,7 @@ public class GameManager : MonoBehaviour
     }
     public void ApplyMoves()
     {
-        _uiManager.UpdateMoves(--_moves);
+        _uiManager.UpdateMoves(--_moves);s
     }
     public void ApplyUpdateScore(int score)
     {
